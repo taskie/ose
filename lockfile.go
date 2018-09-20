@@ -73,7 +73,7 @@ func (lockFile *LockFile) tryToLockImpl(noMutexLock bool) error {
 	if lockFile.FileMode > 0 {
 		mode = lockFile.FileMode
 	}
-	file, err := os.OpenFile(lockFile.Path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, mode)
+	file, err := os.OpenFile(lockFile.Path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC|os.O_EXCL, mode)
 	if err != nil {
 		return err
 	}
