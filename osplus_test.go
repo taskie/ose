@@ -69,26 +69,26 @@ func TestCopy(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = CopyWithOptions(barPath, bazPath, &CopyOptions{
+	err = CopyFile(barPath, bazPath, &CopyOptions{
 		NoOverwrite: true,
 	})
 	if err == nil {
 		t.Fatal("Copy: overwrite must be inhibited")
 	}
-	err = MoveWithOptions(barPath, bazPath, &MoveOptions{
+	err = MoveFile(barPath, bazPath, &MoveOptions{
 		NoOverwrite: true,
 	})
 	if err == nil {
 		t.Fatal("Move: overwrite must be inhibited")
 	}
-	err = MoveWithOptions(barPath, bazPath, &MoveOptions{
+	err = MoveFile(barPath, bazPath, &MoveOptions{
 		NoRename:    true,
 		NoOverwrite: true,
 	})
 	if err == nil {
 		t.Fatal("Move: overwrite must be inhibited")
 	}
-	err = MoveWithOptions(barPath, bazPath, &MoveOptions{
+	err = MoveFile(barPath, bazPath, &MoveOptions{
 		NoRename: true,
 	})
 	if err != nil {

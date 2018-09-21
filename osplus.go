@@ -25,7 +25,10 @@ type CopyOptions struct {
 	NoOverwrite bool
 }
 
-func CopyWithOptions(oldpath string, newpath string, opts *CopyOptions) error {
+func CopyFile(oldpath string, newpath string, opts *CopyOptions) error {
+	if opts == nil {
+		opts = &CopyOptions{}
+	}
 	oldFile, err := os.Open(oldpath)
 	if err != nil {
 		return err
@@ -49,7 +52,7 @@ func CopyWithOptions(oldpath string, newpath string, opts *CopyOptions) error {
 }
 
 func Copy(oldpath string, newpath string) error {
-	return CopyWithOptions(oldpath, newpath, &CopyOptions{})
+	return CopyFile(oldpath, newpath, nil)
 }
 
 type MoveOptions struct {
@@ -57,7 +60,10 @@ type MoveOptions struct {
 	NoRename    bool
 }
 
-func MoveWithOptions(oldpath string, newpath string, opts *MoveOptions) error {
+func MoveFile(oldpath string, newpath string, opts *MoveOptions) error {
+	if opts == nil {
+		opts = &MoveOptions{}
+	}
 	if !opts.NoRename {
 		if opts.NoOverwrite {
 			err := RenameUsingLink(oldpath, newpath)
@@ -75,7 +81,7 @@ func MoveWithOptions(oldpath string, newpath string, opts *MoveOptions) error {
 			}
 		}
 	}
-	err := CopyWithOptions(oldpath, newpath, &CopyOptions{
+	err := CopyFile(oldpath, newpath, &CopyOptions{
 		NoOverwrite: opts.NoOverwrite,
 	})
 	if err != nil {
@@ -86,7 +92,7 @@ func MoveWithOptions(oldpath string, newpath string, opts *MoveOptions) error {
 }
 
 func Move(oldpath string, newpath string) error {
-	return MoveWithOptions(oldpath, newpath, &MoveOptions{})
+	return MoveFile(oldpath, newpath, nil)
 }
 
 func Touch(path string) error {
