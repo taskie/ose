@@ -9,7 +9,7 @@ import (
 )
 
 func TestRenameUsingLink(t *testing.T) {
-	tmp, err := ioutil.TempDir("", "osplus-")
+	tmp, err := ioutil.TempDir("", "osplus-test-")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -42,7 +42,7 @@ func TestRenameUsingLink(t *testing.T) {
 }
 
 func TestCopy(t *testing.T) {
-	tmp, err := ioutil.TempDir("", "osplus-")
+	tmp, err := ioutil.TempDir("", "osplus-test-")
 	if err != nil {
 		t.Fatal(err)
 	}

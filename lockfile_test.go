@@ -5,7 +5,7 @@ import (
 )
 
 func TestTryToLockFile(t *testing.T) {
-	lockFile := NewLockFile("foo.lock")
+	lockFile := NewLockFile("osplus-test-foo.lock")
 	err := lockFile.TryToLock()
 	if err != nil {
 		t.Fatal(err)
@@ -27,7 +27,7 @@ func TestTryToLockFile(t *testing.T) {
 }
 
 func TestLockFile(t *testing.T) {
-	lockFile := NewLockFile("foo.lock")
+	lockFile := NewLockFile("osplus-test-foo.lock")
 	lockFile.Lock()
 	defer func() {
 		lockFile.Unlock()
