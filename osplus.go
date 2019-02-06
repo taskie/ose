@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	Version  = "0.1.0-beta"
+	Version  = "0.1.0"
 	Revision = ""
 )
 
