@@ -1,18 +1,18 @@
 package osplus
 
 import (
-	"bufio"
 	"io"
-	"io/ioutil"
-	"os"
 )
 
+// ComposedReadCloser implements io.ReadCloser.
+// It has an underlying Reader and a function that is called when Close method is called.
 type ComposedReadCloser struct {
 	Reader    io.Reader
 	CloseFunc func(r io.Reader) error
 }
 
-func NewReadCloser(r io.Reader, closeFunc func(r io.Reader) error) io.ReadCloser {
+// NewReadCloser composes a ReadCloser with an underlying Reader and a function that is called when Close method is called.
+func NewReadCloser(r io.Reader, closeFunc func(r io.Reader) error) *ComposedReadCloser {
 	return &ComposedReadCloser{
 		Reader:    r,
 		CloseFunc: closeFunc,
@@ -27,20 +27,28 @@ func (crc *ComposedReadCloser) Close() error {
 	return crc.CloseFunc(crc.Reader)
 }
 
+func nopReadCloseFunc(_ io.Reader) error {
+	return nil
+}
+
+// NopReadCloser composes a ReadCloser with an underlying Reader. It does nothing when Close method is called.
+func NopReadCloser(r io.Reader) *ComposedReadCloser {
+	return NewReadCloser(r, nopReadCloseFunc)
+}
+
+// ComposedWriteCloser implements io.WriteCloser.
+// It has an underlying Writer and a function that is called when Close method is called.
 type ComposedWriteCloser struct {
 	Writer    io.Writer
 	CloseFunc func(w io.Writer) error
 }
 
-func NewWriteCloser(w io.Writer, closeFunc func(w io.Writer) error) io.WriteCloser {
+// NewWriteCloser composes a WriteCloser with an underlying Writer and a function that is called when Close method is called.
+func NewWriteCloser(w io.Writer, closeFunc func(w io.Writer) error) *ComposedWriteCloser {
 	return &ComposedWriteCloser{
 		Writer:    w,
 		CloseFunc: closeFunc,
 	}
-}
-
-func NopWriteCloser(w io.Writer) io.WriteCloser {
-	return NewWriteCloser(w, func(_ io.Writer) error { return nil })
 }
 
 func (cwc *ComposedWriteCloser) Write(p []byte) (int, error) {
@@ -51,125 +59,135 @@ func (cwc *ComposedWriteCloser) Close() error {
 	return cwc.CloseFunc(cwc.Writer)
 }
 
-type Opener struct {
-	FallbackReader        io.Reader
-	FallbackWriter        io.Writer
-	TreatHyphenAsFileName bool
-	Unbuffered            bool
-	MoveOptions           *MoveOptions
+func nopWriteCloseFunc(_ io.Writer) error {
+	return nil
 }
 
-func NewOpener() *Opener {
-	return &Opener{
-		FallbackReader: os.Stdin,
-		FallbackWriter: os.Stdout,
+// NopWriteCloser composes a WriteCloser with an underlying Writer. It does nothing when Close method is called.
+func NopWriteCloser(w io.Writer) *ComposedWriteCloser {
+	return NewWriteCloser(w, nopWriteCloseFunc)
+}
+
+// ExtendedReadCloser implements io.ReadCloser.
+// It has an underlying Reader and a function that is called when Close method is called.
+type ExtendedReadCloser struct {
+	ReadCloser io.ReadCloser
+	CloseFunc  func(rc io.ReadCloser) error
+}
+
+// ExtendReadCloser composes a ReadCloser with an underlying Reader and a function that is called when Close method is called.
+func ExtendReadCloser(rc io.ReadCloser, closeFunc func(rc io.ReadCloser) error) *ExtendedReadCloser {
+	return &ExtendedReadCloser{
+		ReadCloser: rc,
+		CloseFunc:  closeFunc,
 	}
 }
 
-func (opener *Opener) openFile(name string, ff func(name string) (*os.File, error)) (io.ReadCloser, error) {
-	if name == "" || (!opener.TreatHyphenAsFileName && name == "-") {
-		if opener.Unbuffered {
-			return ioutil.NopCloser(opener.FallbackReader), nil
-		}
-		return ioutil.NopCloser(bufio.NewReader(opener.FallbackReader)), nil
-	}
-	f, err := ff(name)
-	if err != nil {
-		return nil, err
-	}
-	if opener.Unbuffered {
-		return f, nil
-	}
-	return NewReadCloser(bufio.NewReader(f), func(_ io.Reader) error {
-		return f.Close()
-	}), nil
+func (erc *ExtendedReadCloser) Read(p []byte) (int, error) {
+	return erc.ReadCloser.Read(p)
 }
 
-func (opener *Opener) OpenFile(name string, flag int, perm os.FileMode) (io.ReadCloser, error) {
-	return opener.openFile(name, func(name string) (*os.File, error) { return os.OpenFile(name, flag, perm) })
+func (erc *ExtendedReadCloser) Close() error {
+	return erc.CloseFunc(erc.ReadCloser)
 }
 
-func (opener *Opener) Open(name string) (io.ReadCloser, error) {
-	return opener.openFile(name, os.Open)
+// ExtendedWriteCloser implements io.WriteCloser.
+// It has an underlying Writer and a function that is called when Close method is called.
+type ExtendedWriteCloser struct {
+	WriteCloser io.WriteCloser
+	CloseFunc   func(w io.WriteCloser) error
 }
 
-func (opener *Opener) createFile(name string, ff func(name string) (*os.File, error)) (io.WriteCloser, error) {
-	if name == "" || (!opener.TreatHyphenAsFileName && name == "-") {
-		if opener.Unbuffered {
-			return NopWriteCloser(opener.FallbackWriter), nil
-		}
-		bw := bufio.NewWriter(opener.FallbackWriter)
-		return NewWriteCloser(bw, func(_ io.Writer) error {
-			return bw.Flush()
-		}), nil
+// ExtendWriteCloser composes a WriteCloser with an underlying Writer and a function that is called when Close method is called.
+func ExtendWriteCloser(wc io.WriteCloser, closeFunc func(wc io.WriteCloser) error) *ExtendedWriteCloser {
+	return &ExtendedWriteCloser{
+		WriteCloser: wc,
+		CloseFunc:   closeFunc,
 	}
-	f, err := ff(name)
-	if err != nil {
-		return nil, err
-	}
-	if opener.Unbuffered {
-		return f, nil
-	}
-	bw := bufio.NewWriter(f)
-	return NewWriteCloser(bw, func(_ io.Writer) error {
-		err := bw.Flush()
-		if err != nil {
-			return err
-		}
-		return f.Close()
-	}), nil
 }
 
-func (opener *Opener) CreateFile(name string, flag int, perm os.FileMode) (io.WriteCloser, error) {
-	return opener.createFile(name, func(name string) (*os.File, error) { return os.OpenFile(name, flag, perm) })
+func (ewc *ExtendedWriteCloser) Write(p []byte) (int, error) {
+	return ewc.WriteCloser.Write(p)
 }
 
-func (opener *Opener) Create(name string) (io.WriteCloser, error) {
-	return opener.createFile(name, os.Create)
+func (ewc *ExtendedWriteCloser) Close() error {
+	return ewc.CloseFunc(ewc.WriteCloser)
 }
 
-var nop = func() {}
+// ConditionalCloser implements io.Closer.
+// When Close method is called, it close the underlying closer only if Enabled is true.
+type ConditionalCloser struct {
+	Closer  io.Closer
+	Enabled bool
+	Closed  bool
+	Called  bool
+}
 
-func (opener *Opener) CreateViaTempFile(name, tempFileDir, tempFilePattern string) (io.WriteCloser, func(), error) {
-	if name == "" || (!opener.TreatHyphenAsFileName && name == "-") {
-		if opener.Unbuffered {
-			return NopWriteCloser(opener.FallbackWriter), nop, nil
-		}
-		bw := bufio.NewWriter(opener.FallbackWriter)
-		return NewWriteCloser(bw, func(_ io.Writer) error {
-			return bw.Flush()
-		}), nop, nil
+// NewConditionalCloser creates new ConditionalCloser.
+func NewConditionalCloser(c io.Closer, enabled bool) *ConditionalCloser {
+	return &ConditionalCloser{
+		Closer:  c,
+		Enabled: enabled,
 	}
-	f, err := ioutil.TempFile(tempFileDir, tempFilePattern)
-	if err != nil {
-		return nil, nop, err
+}
+
+func (cc *ConditionalCloser) Close() error {
+	cc.Called = true
+	if cc.Enabled {
+		cc.Closed = true
+		return cc.Closer.Close()
 	}
-	var wc io.WriteCloser = f
-	if !opener.Unbuffered {
-		bw := bufio.NewWriter(f)
-		wc = NewWriteCloser(bw, func(_ io.Writer) error {
-			err := bw.Flush()
-			if err != nil {
-				return err
-			}
-			return f.Close()
-		})
+	return nil
+}
+
+type ConditionalReadCloser struct {
+	ConditionalCloser
+	ReadCloser io.ReadCloser
+}
+
+// NewConditionalReadCloser creates new ConditionalReadCloser.
+func NewConditionalReadCloser(c io.ReadCloser, enabled bool) *ConditionalReadCloser {
+	return &ConditionalReadCloser{
+		ConditionalCloser: ConditionalCloser{Closer: c, Enabled: enabled},
+		ReadCloser:        c,
 	}
-	canceled := false
-	return NewWriteCloser(wc, func(_ io.Writer) error {
-		err := wc.Close()
-		if err != nil {
-			return err
-		}
-		if canceled {
-			os.Remove(f.Name())
-			return nil
-		}
-		err = MoveFile(f.Name(), name, opener.MoveOptions)
-		if err != nil {
-			os.Remove(f.Name())
-			return err
-		}
-		return nil
-	}), func() { canceled = true }, err
+}
+
+func (cc *ConditionalReadCloser) Read(p []byte) (int, error) {
+	return cc.ReadCloser.Read(p)
+}
+
+func (cc *ConditionalReadCloser) Close() error {
+	return cc.ConditionalCloser.Close()
+}
+
+func (cc *ConditionalReadCloser) SetReadCloser(rc io.ReadCloser) {
+	cc.Closer = rc
+	cc.ReadCloser = rc
+}
+
+type ConditionalWriteCloser struct {
+	ConditionalCloser
+	WriteCloser io.WriteCloser
+}
+
+// NewConditionalWriteCloser creates new ConditionalWriteCloser.
+func NewConditionalWriteCloser(c io.WriteCloser, enabled bool) *ConditionalWriteCloser {
+	return &ConditionalWriteCloser{
+		ConditionalCloser: ConditionalCloser{Closer: c, Enabled: enabled},
+		WriteCloser:       c,
+	}
+}
+
+func (cc *ConditionalWriteCloser) Write(p []byte) (int, error) {
+	return cc.WriteCloser.Write(p)
+}
+
+func (cc *ConditionalWriteCloser) Close() error {
+	return cc.ConditionalCloser.Close()
+}
+
+func (cc *ConditionalWriteCloser) SetWriteCloser(wc io.WriteCloser) {
+	cc.Closer = wc
+	cc.WriteCloser = wc
 }

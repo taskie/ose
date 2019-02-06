@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"io"
 	"io/ioutil"
-	"os"
-	"path/filepath"
 	"testing"
 )
 
@@ -30,6 +28,21 @@ func TestReadCloser(t *testing.T) {
 	rc.Close()
 	if !closed {
 		t.Fatal("must be closed")
+	}
+}
+
+func TestNopReadCloser(t *testing.T) {
+	expected := []byte("ABC")
+	buf := bytes.NewBuffer(expected)
+	closed := false
+	rc := NewReadCloser(buf, func(r io.Reader) error {
+		closed = true
+		return nil
+	})
+	nrc := NopReadCloser(rc)
+	nrc.Close()
+	if closed {
+		t.Fatal("must not be closed")
 	}
 }
 
@@ -60,101 +73,153 @@ func TestWriteCloser(t *testing.T) {
 	}
 }
 
-func TestOpener(t *testing.T) {
-	tmp, err := ioutil.TempDir("", "osplus-test-")
-	if err != nil {
-		t.Fatal(err)
+func TestNopWriteCloser(t *testing.T) {
+	buf := new(bytes.Buffer)
+	closed := false
+	wc := NewWriteCloser(buf, func(w io.Writer) error {
+		closed = true
+		return nil
+	})
+	nwc := NopWriteCloser(wc)
+	nwc.Close()
+	if closed {
+		t.Fatal("must not be closed")
 	}
-	defer func() {
-		err := os.RemoveAll(tmp)
-		if err != nil {
-			t.Fatal(err)
-		}
-	}()
+}
 
-	fooPath := filepath.Join(tmp, "foo")
-	o := NewOpener()
-	wc, err := o.Create(fooPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	io.WriteString(wc, "foo")
-	wc.Close()
-
-	rc, err := o.Open(fooPath)
-	if err != nil {
-		t.Fatal(err)
-	}
+func TestExtendedReadCloser(t *testing.T) {
+	expected := []byte("ABC")
+	buf := bytes.NewBuffer(expected)
+	closedBase := false
+	rcBase := NewReadCloser(buf, func(r io.Reader) error {
+		closedBase = true
+		return nil
+	})
+	closed := false
+	rc := ExtendReadCloser(rcBase, func(rc io.ReadCloser) error {
+		closed = true
+		rc.Close()
+		return nil
+	})
 	bs, err := ioutil.ReadAll(rc)
 	if err != nil {
 		t.Fatal(err)
 	}
+	if !bytes.Equal(expected, bs) {
+		t.Fatalf("invalid value: %v (expected: %v)", bs, expected)
+	}
+	if closed || closedBase {
+		t.Fatal("must not be closed")
+	}
 	rc.Close()
-	if string(bs) != "foo" {
-		t.Fatalf("invalid content: %v", bs)
+	if !closed || !closedBase {
+		t.Fatal("must be closed")
 	}
 }
 
-func TestOpenerViaTempFile(t *testing.T) {
-	tmp, err := ioutil.TempDir("", "osplus-test-")
+func TestExtendedWriteCloser(t *testing.T) {
+	buf := new(bytes.Buffer)
+	closedBase := false
+	wcBase := NewWriteCloser(buf, func(w io.Writer) error {
+		closedBase = true
+		return nil
+	})
+	closed := false
+	wc := ExtendWriteCloser(wcBase, func(wc io.WriteCloser) error {
+		closed = true
+		wc.Close()
+		return nil
+	})
+	expected := []byte("ABC")
+	n, err := wc.Write(expected)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer func() {
-		err := os.RemoveAll(tmp)
-		if err != nil {
-			t.Fatal(err)
-		}
-	}()
-
-	fooPath := filepath.Join(tmp, "foo")
-	o := NewOpener()
-	wc, _, err := o.CreateViaTempFile(fooPath, "", "osplus-test-")
-	if err != nil {
-		t.Fatal(err)
+	if n != len(expected) {
+		t.Fatalf("invalid length: %d", n)
 	}
-	io.WriteString(wc, "foo")
-	_, err = os.Stat(fooPath)
-	if err == nil {
-		t.Fatalf("%s must not be exist", fooPath)
+	if !bytes.Equal(expected, buf.Bytes()) {
+		t.Fatalf("invalid value: %v (expected: %v)", buf.Bytes(), expected)
+	}
+	if closed || closedBase {
+		t.Fatal("must not be closed")
 	}
 	wc.Close()
-	bs, err := ioutil.ReadFile(fooPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if string(bs) != "foo" {
-		t.Fatalf("invalid content: %v", bs)
+	if !closed || !closedBase {
+		t.Fatal("must be closed")
 	}
 }
 
-func TestCancelOpenerViaTempFile(t *testing.T) {
-	tmp, err := ioutil.TempDir("", "osplus-test-")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		err := os.RemoveAll(tmp)
-		if err != nil {
-			t.Fatal(err)
-		}
-	}()
+func TestConditionalReadCloser(t *testing.T) {
+	expected := []byte("ABC")
+	buf := bytes.NewBuffer(expected)
+	closed := false
+	rc := NewReadCloser(buf, func(r io.Reader) error {
+		closed = true
+		return nil
+	})
 
-	fooPath := filepath.Join(tmp, "foo")
-	o := NewOpener()
-	wc, cancel, err := o.CreateViaTempFile(fooPath, "", "osplus-test-")
+	cc := NewConditionalReadCloser(rc, false)
+	if cc.Called {
+		t.Fatal("must not be called")
+	}
+	cc.Close()
+	if closed || cc.Closed {
+		t.Fatal("must not be closed")
+	}
+	if !cc.Called {
+		t.Fatal("must be called")
+	}
+
+	bs, err := ioutil.ReadAll(cc)
 	if err != nil {
 		t.Fatal(err)
 	}
-	io.WriteString(wc, "foo")
-	_, err = os.Stat(fooPath)
-	if err == nil {
-		t.Fatalf("%s must not be exist", fooPath)
+	if !bytes.Equal(expected, bs) {
+		t.Fatalf("invalid value: %v (expected: %v)", bs, expected)
 	}
-	cancel()
-	wc.Close()
-	_, err = os.Stat(fooPath)
-	if err == nil {
-		t.Fatalf("%s must not be exist", fooPath)
+
+	cc.Enabled = true
+	cc.Close()
+	if !closed || !cc.Closed {
+		t.Fatal("must be closed")
+	}
+}
+func TestConditionalWriteCloser(t *testing.T) {
+	buf := new(bytes.Buffer)
+	closed := false
+	wc := NewWriteCloser(buf, func(w io.Writer) error {
+		closed = true
+		return nil
+	})
+	expected := []byte("ABC")
+
+	cc := NewConditionalWriteCloser(wc, false)
+	if cc.Called {
+		t.Fatal("must not be called")
+	}
+	cc.Close()
+	if closed || cc.Closed {
+		t.Fatal("must not be closed")
+	}
+	if !cc.Called {
+		t.Fatal("must be called")
+	}
+
+	n, err := cc.Write(expected)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n != len(expected) {
+		t.Fatalf("invalid length: %d", n)
+	}
+	if !bytes.Equal(expected, buf.Bytes()) {
+		t.Fatalf("invalid value: %v (expected: %v)", buf.Bytes(), expected)
+	}
+
+	cc.Enabled = true
+	cc.Close()
+	if !closed || !cc.Closed {
+		t.Fatal("must be closed")
 	}
 }
