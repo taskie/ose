@@ -28,18 +28,23 @@ func rejectBlank(ss []string) []string {
 }
 
 func GetGoPath() (string, error) {
-	v, err := getenv("GOPATH")
-	if err == nil {
-		return v, nil
+	vs := GetGoPathMulti()
+	if len(vs) > 0 {
+		return vs[0], nil
 	}
-	v, err = homedir.Dir()
+	v, err := homedir.Dir()
 	if err != nil {
 		return "", err
 	}
 	return filepath.Join(v, "go"), nil
 }
 
-func GetUnixPath() []string {
+func GetGoPathMulti() []string {
+	v := os.Getenv("GOPATH")
+	return rejectBlank(strings.Split(v, ":"))
+}
+
+func GetPath() []string {
 	v := os.Getenv("PATH")
 	return rejectBlank(strings.Split(v, ":"))
 }
