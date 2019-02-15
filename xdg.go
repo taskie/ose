@@ -1,7 +1,6 @@
 package osplus
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -18,16 +17,8 @@ const (
 	XdgConfigDirsKey        = "XDG_CONFIG_DIRS"
 )
 
-func Getenv(key string) (string, error) {
-	v := os.Getenv(key)
-	if v != "" {
-		return v, nil
-	}
-	return "", fmt.Errorf("not found: %s", key)
-}
-
 func GetXdgConfigHome() (string, error) {
-	v, err := Getenv(XdgConfigHomeKey)
+	v, err := getenv(XdgConfigHomeKey)
 	if err == nil {
 		return v, nil
 	}
@@ -39,7 +30,7 @@ func GetXdgConfigHome() (string, error) {
 }
 
 func GetXdgCacheHome() (string, error) {
-	v, err := Getenv(XdgCacheHomeKey)
+	v, err := getenv(XdgCacheHomeKey)
 	if err == nil {
 		return v, nil
 	}
@@ -51,7 +42,7 @@ func GetXdgCacheHome() (string, error) {
 }
 
 func GetXdgDataHome() (string, error) {
-	v, err := Getenv(XdgCacheHomeKey)
+	v, err := getenv(XdgCacheHomeKey)
 	if err == nil {
 		return v, nil
 	}
@@ -63,7 +54,7 @@ func GetXdgDataHome() (string, error) {
 }
 
 func GetXdgRuntimeDir() (string, error) {
-	return Getenv(XdgRuntimeDirKey)
+	return getenv(XdgRuntimeDirKey)
 }
 
 func GetXdgDataDirs() []string {

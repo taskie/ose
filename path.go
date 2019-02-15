@@ -5,7 +5,17 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	homedir "github.com/mitchellh/go-homedir"
 )
+
+func getenv(key string) (string, error) {
+	v := os.Getenv(key)
+	if v != "" {
+		return v, nil
+	}
+	return "", fmt.Errorf("not found: %s", key)
+}
 
 func rejectBlank(ss []string) []string {
 	results := make([]string, 0)
@@ -15,6 +25,18 @@ func rejectBlank(ss []string) []string {
 		}
 	}
 	return results
+}
+
+func GetGoPath() (string, error) {
+	v, err := getenv("GOPATH")
+	if err == nil {
+		return v, nil
+	}
+	v, err = homedir.Dir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(v, "go"), nil
 }
 
 func GetUnixPath() []string {
