@@ -127,7 +127,6 @@ func (opener *Opener) CreateTempFileWithDestination(name, tempFileDir, tempFileP
 		}), nopb, nil
 	}
 	wc, commits, err := opener.CreateTempFile(tempFileDir, tempFilePattern)
-	commits(name)
 	return wc, func(ok bool) {
 		if ok {
 			commits(name)

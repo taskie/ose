@@ -57,7 +57,7 @@ func TestOpenerViaTempFile(t *testing.T) {
 
 	fooPath := filepath.Join(tmp, "foo")
 	o := NewOpener()
-	wc, _, err := o.CreateTempFileWithDestination(fooPath, "", "osplus-test-")
+	wc, commit, err := o.CreateTempFileWithDestination(fooPath, "", "osplus-test-")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -66,6 +66,7 @@ func TestOpenerViaTempFile(t *testing.T) {
 	if err == nil {
 		t.Fatalf("%s must not be exist", fooPath)
 	}
+	commit(true)
 	wc.Close()
 	bs, err := ioutil.ReadFile(fooPath)
 	if err != nil {
@@ -90,7 +91,7 @@ func TestCancelOpenerViaTempFile(t *testing.T) {
 
 	fooPath := filepath.Join(tmp, "foo")
 	o := NewOpener()
-	wc, commit, err := o.CreateTempFileWithDestination(fooPath, "", "osplus-test-")
+	wc, _, err := o.CreateTempFileWithDestination(fooPath, "", "osplus-test-")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -99,7 +100,6 @@ func TestCancelOpenerViaTempFile(t *testing.T) {
 	if err == nil {
 		t.Fatalf("%s must not be exist", fooPath)
 	}
-	commit(false)
 	wc.Close()
 	_, err = os.Stat(fooPath)
 	if err == nil {
