@@ -4,8 +4,8 @@ import (
 	"testing"
 )
 
-func TestFakeIOIn(t *testing.T) {
-	io := NewFakeIO()
+func TestBufIOContainerIn(t *testing.T) {
+	io := NewBufIOContainer()
 	io.InBuf.WriteByte(42)
 	bs := []byte{0}
 	io.In().Read(bs)
@@ -14,8 +14,8 @@ func TestFakeIOIn(t *testing.T) {
 	}
 }
 
-func TestFakeIOOut(t *testing.T) {
-	io := NewFakeIO()
+func TestBufIOContainerOut(t *testing.T) {
+	io := NewBufIOContainer()
 	io.Out().Write([]byte{42})
 	b, err := io.OutBuf.ReadByte()
 	if err != nil {
@@ -26,8 +26,8 @@ func TestFakeIOOut(t *testing.T) {
 	}
 }
 
-func TestFakeIOErr(t *testing.T) {
-	io := NewFakeIO()
+func TestBufIOContainerErr(t *testing.T) {
+	io := NewBufIOContainer()
 	io.Err().Write([]byte{42})
 	b, err := io.ErrBuf.ReadByte()
 	if err != nil {

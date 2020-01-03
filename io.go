@@ -34,26 +34,26 @@ func NewIOContainer(in io.Reader, out, err io.Writer) *IOContainer {
 }
 
 func Stdio() IO {
-	io := NewIOContainer(os.Stdin, os.Stdout, os.Stderr)
 	if runtime.GOOS == "windows" {
-		io.OutW = colorable.NewColorableStdout()
-		io.ErrW = colorable.NewColorableStderr()
+		outW := colorable.NewColorableStdout()
+		errW := colorable.NewColorableStderr()
+		return NewIOContainer(os.Stdin, outW, errW)
 	}
-	return io
+	return NewIOContainer(os.Stdin, os.Stdout, os.Stderr)
 }
 
-type FakeIO struct {
+type BufIOContainer struct {
 	InBuf  *bytes.Buffer
 	OutBuf *bytes.Buffer
 	ErrBuf *bytes.Buffer
 }
 
-func (i *FakeIO) In() io.Reader  { return i.InBuf }
-func (i *FakeIO) Out() io.Writer { return i.OutBuf }
-func (i *FakeIO) Err() io.Writer { return i.ErrBuf }
+func (i *BufIOContainer) In() io.Reader  { return i.InBuf }
+func (i *BufIOContainer) Out() io.Writer { return i.OutBuf }
+func (i *BufIOContainer) Err() io.Writer { return i.ErrBuf }
 
-func NewFakeIO() *FakeIO {
-	return &FakeIO{
+func NewBufIOContainer() *BufIOContainer {
+	return &BufIOContainer{
 		InBuf:  new(bytes.Buffer),
 		OutBuf: new(bytes.Buffer),
 		ErrBuf: new(bytes.Buffer),
