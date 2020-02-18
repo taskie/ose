@@ -1,11 +1,13 @@
-package osplus
+package osplus_test
 
 import (
 	"testing"
+
+	"github.com/taskie/ose/osplus"
 )
 
-func TestTryToLockFile(t *testing.T) {
-	lockFile := NewLockFile("osplus-test-foo.lock")
+func testTryToLockFile(t *testing.T) {
+	lockFile := osplus.NewLockFile("osplus-test-foo.lock")
 	err := lockFile.TryToLock()
 	if err != nil {
 		t.Fatal(err)
@@ -26,8 +28,8 @@ func TestTryToLockFile(t *testing.T) {
 	}()
 }
 
-func TestLockFile(t *testing.T) {
-	lockFile := NewLockFile("osplus-test-foo.lock")
+func testLockFile(t *testing.T) {
+	lockFile := osplus.NewLockFile("osplus-test-foo.lock")
 	lockFile.Lock()
 	defer func() {
 		lockFile.Unlock()

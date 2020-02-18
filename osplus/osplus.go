@@ -7,11 +7,6 @@ import (
 	"time"
 )
 
-var (
-	Version  = "0.1.2"
-	Revision = ""
-)
-
 func RenameUsingLink(oldpath string, newpath string) error {
 	err := os.Link(oldpath, newpath)
 	if err != nil {

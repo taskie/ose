@@ -1,4 +1,4 @@
-package osplus
+package osplus_test
 
 import (
 	"io/ioutil"
@@ -6,10 +6,12 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/taskie/ose/osplus"
 )
 
-func TestRenameUsingLink(t *testing.T) {
-	tmp, err := ioutil.TempDir("", "osplus-test-")
+func testRenameUsingLink(t *testing.T) {
+	tmp, err := ioutil.TempDir("", "ose-test-")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -23,26 +25,26 @@ func TestRenameUsingLink(t *testing.T) {
 	fooPath := filepath.Join(tmp, "foo")
 	barPath := filepath.Join(tmp, "bar")
 	bazPath := filepath.Join(tmp, "baz")
-	err = Touch(fooPath)
+	err = osplus.Touch(fooPath)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = Touch(bazPath)
+	err = osplus.Touch(bazPath)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = RenameUsingLink(fooPath, barPath)
+	err = osplus.RenameUsingLink(fooPath, barPath)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = RenameUsingLink(barPath, bazPath)
+	err = osplus.RenameUsingLink(barPath, bazPath)
 	if err == nil || !strings.Contains(err.Error(), "file exists") {
 		t.Fatalf("RenameUsingLink: error 'exists' must occur, but %v", err)
 	}
 }
 
-func TestCopy(t *testing.T) {
-	tmp, err := ioutil.TempDir("", "osplus-test-")
+func testCopy(t *testing.T) {
+	tmp, err := ioutil.TempDir("", "ose-test-")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -61,34 +63,34 @@ func TestCopy(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = Move(fooPath, barPath)
+	err = osplus.Move(fooPath, barPath)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = Copy(barPath, bazPath)
+	err = osplus.Copy(barPath, bazPath)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = CopyFile(barPath, bazPath, &CopyOptions{
+	err = osplus.CopyFile(barPath, bazPath, &osplus.CopyOptions{
 		NoOverwrite: true,
 	})
 	if err == nil {
 		t.Fatal("Copy: overwrite must be inhibited")
 	}
-	err = MoveFile(barPath, bazPath, &MoveOptions{
+	err = osplus.MoveFile(barPath, bazPath, &osplus.MoveOptions{
 		NoOverwrite: true,
 	})
 	if err == nil {
 		t.Fatal("Move: overwrite must be inhibited")
 	}
-	err = MoveFile(barPath, bazPath, &MoveOptions{
+	err = osplus.MoveFile(barPath, bazPath, &osplus.MoveOptions{
 		NoRename:    true,
 		NoOverwrite: true,
 	})
 	if err == nil {
 		t.Fatal("Move: overwrite must be inhibited")
 	}
-	err = MoveFile(barPath, bazPath, &MoveOptions{
+	err = osplus.MoveFile(barPath, bazPath, &osplus.MoveOptions{
 		NoRename: true,
 	})
 	if err != nil {

@@ -1,10 +1,10 @@
-module github.com/taskie/osplus
+module github.com/taskie/ose
 
 go 1.13
 
 require (
 	github.com/mattn/go-colorable v0.1.4
-	github.com/mattn/go-isatty v0.0.11 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
-	golang.org/x/sys v0.0.0-20200102141924-c96a22e43c9c // indirect
+	github.com/spf13/afero v1.2.2
+	golang.org/x/sys v0.0.0-20190412213103-97732733099d // indirect
 )

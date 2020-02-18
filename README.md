@@ -1,7 +1,7 @@
-# osplus
+# ose
 
-additional utilities for "os", "io" and "io/ioutil" packages.
+A pound of sugar to use os, io and ioutil.
 
-## license
+## License
 
 Apache License 2.0

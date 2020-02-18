@@ -1,4 +1,4 @@
-package osplus
+package osplus_test
 
 import (
 	"bytes"
@@ -6,10 +6,12 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/taskie/ose/osplus"
 )
 
-func TestCreateTempFile(t *testing.T) {
-	tf, err := CreateTempFile("", "osplus-test-")
+func testCreateTempFile(t *testing.T) {
+	tf, err := osplus.CreateTempFile("", "osplus-test-")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -28,7 +30,7 @@ func TestCreateTempFile(t *testing.T) {
 	}
 }
 
-func TestCreateTempFileWithDestination(t *testing.T) {
+func testCreateTempFileWithDestination(t *testing.T) {
 	tmp, err := ioutil.TempDir("", "osplus-test-")
 	if err != nil {
 		t.Fatal(err)
@@ -41,7 +43,7 @@ func TestCreateTempFileWithDestination(t *testing.T) {
 	}()
 
 	fooPath := filepath.Join(tmp, "foo")
-	tf, err := CreateTempFileWithDestination(fooPath, "", "osplus-test-")
+	tf, err := osplus.CreateTempFileWithDestination(fooPath, "", "osplus-test-")
 	if err != nil {
 		t.Fatal(err)
 	}

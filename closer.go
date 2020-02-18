@@ -1,4 +1,4 @@
-package osplus
+package ose
 
 import (
 	"io"

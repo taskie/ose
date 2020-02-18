@@ -1,17 +1,19 @@
-package osplus
+package ose_test
 
 import (
 	"bytes"
 	"io"
 	"io/ioutil"
 	"testing"
+
+	"github.com/taskie/ose"
 )
 
 func TestReadCloser(t *testing.T) {
 	expected := []byte("ABC")
 	buf := bytes.NewBuffer(expected)
 	closed := false
-	rc := NewReadCloser(buf, func(r io.Reader) error {
+	rc := ose.NewReadCloser(buf, func(r io.Reader) error {
 		closed = true
 		return nil
 	})
@@ -35,11 +37,11 @@ func TestNopReadCloser(t *testing.T) {
 	expected := []byte("ABC")
 	buf := bytes.NewBuffer(expected)
 	closed := false
-	rc := NewReadCloser(buf, func(r io.Reader) error {
+	rc := ose.NewReadCloser(buf, func(r io.Reader) error {
 		closed = true
 		return nil
 	})
-	nrc := NopReadCloser(rc)
+	nrc := ose.NopReadCloser(rc)
 	nrc.Close()
 	if closed {
 		t.Fatal("must not be closed")
@@ -49,7 +51,7 @@ func TestNopReadCloser(t *testing.T) {
 func TestWriteCloser(t *testing.T) {
 	buf := new(bytes.Buffer)
 	closed := false
-	wc := NewWriteCloser(buf, func(w io.Writer) error {
+	wc := ose.NewWriteCloser(buf, func(w io.Writer) error {
 		closed = true
 		return nil
 	})
@@ -76,11 +78,11 @@ func TestWriteCloser(t *testing.T) {
 func TestNopWriteCloser(t *testing.T) {
 	buf := new(bytes.Buffer)
 	closed := false
-	wc := NewWriteCloser(buf, func(w io.Writer) error {
+	wc := ose.NewWriteCloser(buf, func(w io.Writer) error {
 		closed = true
 		return nil
 	})
-	nwc := NopWriteCloser(wc)
+	nwc := ose.NopWriteCloser(wc)
 	nwc.Close()
 	if closed {
 		t.Fatal("must not be closed")
@@ -91,12 +93,12 @@ func TestExtendedReadCloser(t *testing.T) {
 	expected := []byte("ABC")
 	buf := bytes.NewBuffer(expected)
 	closedBase := false
-	rcBase := NewReadCloser(buf, func(r io.Reader) error {
+	rcBase := ose.NewReadCloser(buf, func(r io.Reader) error {
 		closedBase = true
 		return nil
 	})
 	closed := false
-	rc := ExtendReadCloser(rcBase, func(rc io.ReadCloser) error {
+	rc := ose.ExtendReadCloser(rcBase, func(rc io.ReadCloser) error {
 		closed = true
 		rc.Close()
 		return nil
@@ -120,12 +122,12 @@ func TestExtendedReadCloser(t *testing.T) {
 func TestExtendedWriteCloser(t *testing.T) {
 	buf := new(bytes.Buffer)
 	closedBase := false
-	wcBase := NewWriteCloser(buf, func(w io.Writer) error {
+	wcBase := ose.NewWriteCloser(buf, func(w io.Writer) error {
 		closedBase = true
 		return nil
 	})
 	closed := false
-	wc := ExtendWriteCloser(wcBase, func(wc io.WriteCloser) error {
+	wc := ose.ExtendWriteCloser(wcBase, func(wc io.WriteCloser) error {
 		closed = true
 		wc.Close()
 		return nil
@@ -154,12 +156,12 @@ func TestConditionalReadCloser(t *testing.T) {
 	expected := []byte("ABC")
 	buf := bytes.NewBuffer(expected)
 	closed := false
-	rc := NewReadCloser(buf, func(r io.Reader) error {
+	rc := ose.NewReadCloser(buf, func(r io.Reader) error {
 		closed = true
 		return nil
 	})
 
-	cc := NewConditionalReadCloser(rc, false)
+	cc := ose.NewConditionalReadCloser(rc, false)
 	if cc.Called {
 		t.Fatal("must not be called")
 	}
@@ -188,13 +190,13 @@ func TestConditionalReadCloser(t *testing.T) {
 func TestConditionalWriteCloser(t *testing.T) {
 	buf := new(bytes.Buffer)
 	closed := false
-	wc := NewWriteCloser(buf, func(w io.Writer) error {
+	wc := ose.NewWriteCloser(buf, func(w io.Writer) error {
 		closed = true
 		return nil
 	})
 	expected := []byte("ABC")
 
-	cc := NewConditionalWriteCloser(wc, false)
+	cc := ose.NewConditionalWriteCloser(wc, false)
 	if cc.Called {
 		t.Fatal("must not be called")
 	}
