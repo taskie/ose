@@ -56,7 +56,7 @@ func NewStdio() IO {
 		errW := colorable.NewColorableStderr()
 		return NewIOContainer(os.Stdin, outW, errW)
 	}
-	return &realIO{}
+	return realIO{}
 }
 
 type BufIOContainer struct {
@@ -121,17 +121,22 @@ type realClock struct{}
 func (realClock) Now() time.Time                         { return time.Now() }
 func (realClock) After(d time.Duration) <-chan time.Time { return time.After(d) }
 
-type MockClock struct {
-	t time.Time
-	d time.Duration
+type FakeClock struct {
+	Time     time.Time
+	Duration time.Duration
+	Count    int64
 }
 
-func NewMockClock(t time.Time, d time.Duration) *MockClock {
-	return &MockClock{t: t, d: d}
+func NewFakeClock(t time.Time, d time.Duration) *FakeClock {
+	return &FakeClock{Time: t, Duration: d}
 }
 
-func (c *MockClock) Now() time.Time                         { return c.t }
-func (c *MockClock) After(d time.Duration) <-chan time.Time { return time.After(c.d) }
+func (c *FakeClock) Now() time.Time {
+	t := c.Time.Add(time.Duration(c.Count) * c.Duration)
+	c.Count++
+	return t
+}
+func (c *FakeClock) After(d time.Duration) <-chan time.Time { return time.After(c.Duration) }
 
 type World interface {
 	Fs() afero.Fs
@@ -167,8 +172,29 @@ func NewRealWorld() World {
 
 func (w *realWorld) Fs() afero.Fs { return w.fs }
 func (w *realWorld) IO() IO       { return w.io }
-func (w *realWorld) Env() Env     { return &realEnv{} }
-func (w *realWorld) Clock() Clock { return &realClock{} }
+func (w *realWorld) Env() Env     { return realEnv{} }
+func (w *realWorld) Clock() Clock { return realClock{} }
+
+type FakeWorld struct {
+	FakeFs    afero.Fs
+	FakeIO    *BufIOContainer
+	FakeEnv   *MapEnv
+	FakeClock *FakeClock
+}
+
+func NewFakeWorld() *FakeWorld {
+	return &FakeWorld{
+		FakeFs:    afero.NewMemMapFs(),
+		FakeIO:    NewBufIOContainer(),
+		FakeEnv:   NewMapEnv(),
+		FakeClock: NewFakeClock(time.Now(), time.Millisecond),
+	}
+}
+
+func (w *FakeWorld) Fs() afero.Fs { return w.FakeFs }
+func (w *FakeWorld) IO() IO       { return w.FakeIO }
+func (w *FakeWorld) Env() Env     { return w.FakeEnv }
+func (w *FakeWorld) Clock() Clock { return w.FakeClock }
 
 func GetFs() afero.Fs { return world.Fs() }
 func GetIO() IO       { return world.IO() }
