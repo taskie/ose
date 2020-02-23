@@ -2,6 +2,7 @@ package ose
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"os"
 
@@ -18,12 +19,15 @@ func newBufferedReader(rc io.ReadCloser) io.ReadCloser {
 func newBufferedWriter(wc io.WriteCloser) io.WriteCloser {
 	bw := bufio.NewWriter(wc)
 	return NewWriteCloser(bw, func(_ io.Writer) error {
-		err1 := bw.Flush()
-		err2 := wc.Close()
-		if err1 != nil {
-			return err1
+		err := bw.Flush()
+		if err != nil {
+			return fmt.Errorf("flush : %w", err)
 		}
-		return err2
+		err2 := wc.Close()
+		if err2 != nil {
+			return fmt.Errorf("clise : %w", err)
+		}
+		return nil
 	})
 }
 
@@ -112,12 +116,20 @@ func (o *Opener) TempScope() *TempScope {
 }
 
 func (o *Opener) CreateTempFile(dir, prefix, newname string, handler func(f io.WriteCloser) (bool, error)) (bool, error) {
+	if o.shouldFallback(newname) {
+		wc, err := o.Create(newname)
+		if err != nil {
+			return false, err
+		}
+		defer wc.Close()
+		return handler(wc)
+	}
 	return o.TempScope().TempFileScope(dir, prefix, newname, func(f afero.File) (bool, error) {
 		var wc io.WriteCloser = f
 		if !o.Unbuffered {
-			wc = newBufferedWriter(f)
+			wc = newBufferedWriter(NopWriteCloser(f))
+			defer wc.Close()
 		}
-		defer wc.Close()
 		return handler(wc)
 	})
 }

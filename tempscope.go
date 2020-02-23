@@ -13,36 +13,58 @@ func NewTempScope(fs afero.Fs) *TempScope {
 }
 
 func (s *TempScope) TempFileScope(dir, prefix, newname string, handler func(f afero.File) (bool, error)) (bool, error) {
+	newname, err := s.TempFileScopeLazy(dir, prefix, func(f afero.File) (string, error) {
+		ok, err := handler(f)
+		if !ok {
+			return "", err
+		}
+		return newname, err
+	})
+	return newname != "", err
+}
+
+func (s *TempScope) TempFileScopeLazy(dir, prefix string, handler func(f afero.File) (string, error)) (string, error) {
 	f, err := afero.TempFile(s.fs, dir, prefix)
 	if err != nil {
-		return false, err
+		return "", err
 	}
 	oldname := f.Name()
-	ok, err := handler(f)
-	if !ok || err != nil {
+	newname, err := handler(f)
+	if newname == "" || err != nil {
 		_ = f.Close()
 		_ = s.fs.Remove(oldname)
-		return ok, err
+		return newname, err
 	}
 	err = f.Close()
 	if err != nil {
 		_ = s.fs.Remove(oldname)
-		return ok, err
+		return newname, err
 	}
 	err = s.fs.Rename(oldname, newname)
-	return ok, err
+	return newname, err
 }
 
 func (s *TempScope) TempDirScope(dir, prefix, newname string, handler func(tempname string) (bool, error)) (bool, error) {
+	newname, err := s.TempDirScopeLazy(dir, prefix, func(tempname string) (string, error) {
+		ok, err := handler(tempname)
+		if !ok {
+			return "", err
+		}
+		return newname, err
+	})
+	return newname != "", err
+}
+
+func (s *TempScope) TempDirScopeLazy(dir, prefix string, handler func(tempname string) (string, error)) (string, error) {
 	oldname, err := afero.TempDir(s.fs, dir, prefix)
 	if err != nil {
-		return false, err
+		return "", err
 	}
-	ok, err := handler(oldname)
-	if !ok || err != nil {
+	newname, err := handler(oldname)
+	if newname == "" || err != nil {
 		_ = s.fs.RemoveAll(oldname)
-		return ok, err
+		return newname, err
 	}
 	err = s.fs.Rename(oldname, newname)
-	return ok, err
+	return newname, err
 }
