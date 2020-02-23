@@ -21,5 +21,6 @@
 tmp
 
 .vscode
-/cmd/cmd/colivec/cmd/colivec
-
+{{ range .CmdNames -}}
+/cmd/{{ . }}/{{ . }}
+{{ end }}
