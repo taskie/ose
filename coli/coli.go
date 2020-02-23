@@ -66,7 +66,7 @@ func (c *Coli) PrepareConfig(cmd *cobra.Command) {
 	if err == nil {
 		v.AddConfigPath(filepath.Join(configHome, name))
 	}
-	viper.SetEnvPrefix(name)
+	v.SetEnvPrefix(name)
 }
 
 func (c *Coli) PreparePreRun(cmd *cobra.Command) {
@@ -80,6 +80,21 @@ func (c *Coli) BindFlags(flg *pflag.FlagSet, names []string) {
 		_ = c.vpr.BindPFlag(envKey, flg.Lookup(s))
 		c.vpr.RegisterAlias(structKey, envKey)
 	}
+}
+
+func newDefaultLogger() *zap.Logger {
+	cfg := zap.NewProductionConfig()
+	cfg.Encoding = "console"
+	cfg.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+	cfg.Level = zap.NewAtomicLevelAt(zapcore.WarnLevel)
+	cfg.EncoderConfig.EncodeTime = func(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
+		enc.AppendString(t.Local().Format(time.RFC3339))
+	}
+	logger, err := cfg.Build()
+	if err != nil {
+		panic(err)
+	}
+	return logger
 }
 
 func newVerboseLogger() *zap.Logger {
@@ -109,21 +124,28 @@ func newDebugLogger() *zap.Logger {
 
 func (c *Coli) PreRun(cmd *cobra.Command, args []string) {
 	v := c.Viper()
+	v.AutomaticEnv()
+	err := v.ReadInConfig()
+	if err != nil {
+		zap.L().Debug("can't read in config", zap.Error(err))
+	}
 	if v.GetBool("verbose") {
 		zap.ReplaceGlobals(newVerboseLogger())
 	} else if v.GetBool("debug") {
 		zap.ReplaceGlobals(newDebugLogger())
+	} else {
+		zap.ReplaceGlobals(newDefaultLogger())
 	}
 }
 
 func (c *Coli) Execute(cmd *cobra.Command) error {
-	v := c.Viper()
-	v.AutomaticEnv()
-	err := v.ReadInConfig()
-	if err != nil {
-		// nop
-	}
 	return cmd.Execute()
+}
+
+func (c *Coli) WrapRun(f func(c *Coli, cmd *cobra.Command, args []string)) func(cmd *cobra.Command, args []string) {
+	return func(cmd *cobra.Command, args []string) {
+		f(c, cmd, args)
+	}
 }
 
 type ColiCommandProducer func(cl *Coli, name string, path []string) *cobra.Command
