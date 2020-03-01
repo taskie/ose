@@ -1,6 +1,6 @@
 package main
 
-//go:generate statik -f -src templates -include GNUmakefile,_gitignore
+//go:generate statik -f -src templates
 
 import (
 	"io/ioutil"

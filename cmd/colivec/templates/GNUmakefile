@@ -1,13 +1,13 @@
 .PHONY: build
 build:
 	go build -v -ldflags "-s -w"
-{{ range .CmdNames }}	cd {{ . }} && go build -v -ldflags "-s -w"
+{{ range .CmdNames }}	cd cmd/{{ . }} && go build -v -ldflags "-s -w"
 {{ end }}
 
 .PHONY: install
 install:
 	go install -v -ldflags "-s -w"
-{{ range .CmdNames }}	cd {{ . }} && go install -v -ldflags "-s -w"
+{{ range .CmdNames }}	cd cmd/{{ . }} && go install -v -ldflags "-s -w"
 {{ end }}
 
 .PHONY: generate
@@ -30,7 +30,7 @@ fmt:
 .PHONY: upgrade
 upgrade:
 	go get -u
-{{ range .CmdNames }}	cd {{ . }} && go get -u
+{{ range .CmdNames }}	cd cmd/{{ . }} && go get -u
 {{ end }}
 
 .PHONY: mod-tidy
