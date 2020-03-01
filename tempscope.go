@@ -40,7 +40,7 @@ func (s *TempScope) TempFileScopeLazy(dir, prefix string, handler func(f afero.F
 		_ = s.fs.Remove(oldname)
 		return newname, err
 	}
-	err = s.fs.Rename(oldname, newname)
+	err = Move(s.fs, oldname, newname)
 	return newname, err
 }
 
@@ -65,6 +65,7 @@ func (s *TempScope) TempDirScopeLazy(dir, prefix string, handler func(tempname s
 		_ = s.fs.RemoveAll(oldname)
 		return newname, err
 	}
+	// TODO: implement cp -r
 	err = s.fs.Rename(oldname, newname)
 	return newname, err
 }
