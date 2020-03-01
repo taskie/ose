@@ -32,6 +32,7 @@ upgrade:
 	go get -u
 {{ range .CmdNames }}	cd cmd/{{ . }} && go get -u
 {{ end }}
+	$(MAKE) mod-tidy
 
 .PHONY: mod-tidy
 mod-tidy:

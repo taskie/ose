@@ -32,6 +32,7 @@ upgrade:
 	go get -u
 	cd cmd/colivec && go get -u
 
+	$(MAKE) mod-tidy
 
 .PHONY: mod-tidy
 mod-tidy:
